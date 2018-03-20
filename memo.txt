@@ -1,0 +1,16 @@
+*ONS access control
+- validator address
+- membership manager address
+- most functions are related to access
+- make modifier -> only validator or membership manager
+- 일단 role을 분리하자.
+- contract의 pause 기능을 추가한다.
+
+*ONS access control을 상속한
+*ONSBase <- it is from Dr. Yoon's source
+
+*ONSBase and ERC721 token 하위에
+*ONSOwnership : ONS data를 가지는 class?
+
+*ONSOwnership 밑에
+*ONSCore
