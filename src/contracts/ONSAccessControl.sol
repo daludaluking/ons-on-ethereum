@@ -10,7 +10,7 @@ contract ONSAccessControl {
   */
   address public managerAddress;
   address public validatorAddress;
-  
+
   function ONSAccessControl() public {
     // constructor
     managerAddress = msg.sender;

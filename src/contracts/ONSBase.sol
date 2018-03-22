@@ -12,7 +12,7 @@ contract ONSBase is ONSAccessControl, ERC721{
     address _address;
     bytes32 name;
     string url;
-    string realAddress;
+    string email;
     //need more information?
   }
 
@@ -49,26 +49,36 @@ contract ONSBase is ONSAccessControl, ERC721{
     address owner;
     bytes32 gs1Code;
     uint256[] onsRecordIndex;
+    bool active;
     mapping(string => string) extendedONSData;
   }
 
   GS1Code[] public gs1Codes;
   ONSRecord[] public onsRecords;
   ServiceType[] public serviceTypes;
-  AccountInfo[] public accountInfo;
+  AccountInfo[] public accountInfoList;
 
-  //ownerInfos is whitelist..
-
-  //gs1 code index mapping to owner
+  //GS1 code index와 GS1 code 소유자 주소와 매핑
   mapping (uint256 => address) public GS1CodeIndexToOwner;
+
+  //address가 가지는 GS1Code count;
   mapping (address => uint256) public ownershipGS1CodeCount;
+
+  //GS1Code index와 approved address와 mapping
   mapping (uint256 => address) public GS1CodeIndexToApproved;
+
+  //gs1 code와 GS1Code 구조체와의 매핑
+  mapping (byte32 => uint256) public GS1CodeToIndex;
 
   //for account
   //accountInfo[addressToAccountInfoIndex[address]]._address == address
   mapping (address => uint256) public addressToAccountInfoIndex;
+
   //addressToGS1CodeIndexes[address].push(gs1code index)
+  mapping (byte32 => uint256) public GS1CodeToOwnerIndex;
   mapping (address => uint256[]) public addressToGS1CodeIndexes;
+
+
   //GS1CodeIndexToONSRecordIndexes[gs1code index].push(ons record index);
   mapping (uint256 => uint256[]) public GS1CodeIndexToONSRecordIndexes;
 
@@ -158,16 +168,36 @@ contract ONSBase is ONSAccessControl, ERC721{
     return gs1Codes.length - 1;
   }
 
-  function isExistOwnerInfo(address _address)
+  function isExistGS1Code(byte32 _gs1Code)
   public
-  view
   returns(bool)
   {
-    if (accountInfo.length == 0) return false;
-    return (accountInfo[addressToAccountInfoIndex[_address]]._address == _address);
+    if (GS1CodeToIndex.length == 0) return false;
+    return (gs1Codes[GS1CodeToIndex[_gs1Code]].gs1Code == _gs1Code);
   }
 
-  modifier isAllowedUser() {
+  function addGS1Code(byte32 _gs1Code)
+  internal
+  returns(bool)
+  {
+    require(!isExistGS1Code(_gs1Code));
+    //1. GS1Code 구조체를 생성하고 gs1Codes list에 추가한다. -> index를 받아온다.
+    uint256 tokenIndex = gs1Codes.push(GS1Code({owner:msg.sender, gs1Code:_gs1Code, active:1}))- 1;
+    addressToGS1CodeIndexes[msg.sender].push(tokenIndex);
+    ++ownershipGS1CodeCount[msg.sender];
+    GS1CodeIndexToOwner[tokenIndex] = msg.sender;
+    return true;
+  }
+
+  function isExistOwnerInfo(address _address)
+  public
+  returns(bool)
+  {
+    if (accountInfoList.length == 0) return false;
+    return (accountInfoList[addressToAccountInfoIndex[_address]]._address == _address);
+  }
+
+  modifier onlyAllowedAccount() {
     require(isExistOwnerInfo(msg.sender));
     _;
   }
