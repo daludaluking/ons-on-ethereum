@@ -292,6 +292,35 @@ contract ONSBase is ONSAccessControl, ERC721{
     _addONSRecordToGS1Code(_gs1Code, recordId);
     return true;
   }
+
+  /*
+  struct ServiceType
+  {
+    // ONS ServiceType properties
+    bytes32 serviceTypeIdentifer;
+    bool abstrct;
+    bytes32 extends;
+    string WSDL;
+    string homepage;
+    mapping(bytes32 => string) documentations;
+    bytes32[] obsoletes;
+    bytes32[] obsoletedBy;
+  }
+  */
+  function _addServiceType(uint256 _onsRecordId, byte32 _serviceTypeIdentifer, bool _abstrct,
+                          bytes32 _extends, string _WSDL, string _homepage)
+  internal
+  onlyAllowedAccount
+  returns(bool)
+  {
+    //TO DO
+    return true;
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////////////////////
   /*
     The functions below is the implementation of the ERC721 token.
   */

@@ -2,7 +2,7 @@ pragma solidity ^0.4.18;
 
 /// @title The ONSAccessControl that manages access privileges to transaction.
 /// @author dalu
-contract ONSAccessControl {
+contract ONSManager {
 
   /*
     manager : has a role that registers a user on the whitelist that is a list of user's addresses who can trade.
@@ -13,7 +13,7 @@ contract ONSAccessControl {
   mapping(address => uint256) public owners;
   address[] ownerList;
 
-  function ONSAccessControl() public {
+  function ONSManager() public {
     // constructor
     managerAddress = msg.sender;
 
