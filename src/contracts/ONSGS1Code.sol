@@ -35,6 +35,12 @@ contract ONSGS1Code is ONSManager{
   //owner들의 GS1CodesOfOwner data list
   mapping(address=>GS1CodesOfOwner) gs1CodeListOfOwner;
 
+  struct Provider {
+    uint allowedProviderListPointer; // needed to delete a "allowedProvider"
+    address[] providers;
+    mapping(address => uint) providersPointer; // 4294967295 pointer is reserved as existence check
+  }
+
   //owner allow user to add ons records for gs1 code.
   //mapping(bytes32 => address[]) public allowedProviderMapForGS1Code;
   //address[] allowedProviders;
@@ -191,5 +197,4 @@ contract ONSGS1Code is ONSManager{
     delete gs1CodeList[gs1Code];
     return true;
   }
-
 }
