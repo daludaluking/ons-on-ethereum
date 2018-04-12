@@ -1,4 +1,4 @@
-var ONS = artifacts.require("./ONS.sol");
+var ONS = artifacts.require("./ONSRecord.sol");
 
 module.exports = function(deployer) {
   deployer.deploy(ONS);

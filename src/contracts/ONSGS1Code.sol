@@ -7,7 +7,7 @@ import "./ONSManager.sol";
   이 문제를 어떻게 해결할 것인지 고민할 필요가 있다.
     -> array 형태의 data를 모두 mapping array로 변경해 보자.
 */
-contract ONSGS1Code is ONSAccessControl{
+contract ONSGS1Code is ONSManager{
 
   enum GS1CodeState {NONE, INACTIVE, ACTIVE}
 
@@ -36,7 +36,7 @@ contract ONSGS1Code is ONSAccessControl{
   mapping(address=>GS1CodesOfOwner) gs1CodeListOfOwner;
 
   //owner allow user to add ons records for gs1 code.
-  mapping(bytes32 => address) public allowedProviderForGS1Code;
+  //mapping(bytes32 => address[]) public allowedProviderMapForGS1Code;
   //address[] allowedProviders;
 
   function ONSGS1Code() {
@@ -47,7 +47,7 @@ contract ONSGS1Code is ONSAccessControl{
     _;
   }
 
-  function isExistGS1Code(bytes32 gs1Code) internal view returns(bool) {
+  function isExistGS1Code(bytes32 gs1Code) public view returns(bool) {
     //gs1CodeList에 owner가 정상적인지 확인.
     if (gs1CodeList[gs1Code].index > 0)
       return true;
@@ -72,47 +72,64 @@ contract ONSGS1Code is ONSAccessControl{
   //gs1 code의 상태 변경.
   function changeGS1CodeState(bytes32 gs1Code, GS1CodeState state)
   public
-  onlyManager
+  onlyRoot
   returns(bool)
   {
     require(gs1CodeList[gs1Code].index > 0);
-    gs1CodeList[gs1Code].state = state;
-    return true;
+    if (msg.sender == gs1CodeList[gs1Code].owner
+    || isManager(msg.sender) == true) {
+      gs1CodeList[gs1Code].state = state;
+      return true;
+    }
+    return false;
   }
 
   //gs1 code의 상태를 얻어옴.
   function getGS1CodeState(bytes32 gs1Code)
   public
+  view
   returns(GS1CodeState)
   {
     require(gs1CodeList[gs1Code].index > 0);
     return gs1CodeList[gs1Code].state;
   }
 
+  //gs1 code의 상태를 얻어옴.
+  function getGS1CodeOwner(bytes32 gs1Code)
+  public
+  onlyRoot
+  view
+  returns(address)
+  {
+    require(gs1CodeList[gs1Code].index > 0);
+    return gs1CodeList[gs1Code].owner;
+  }
+
   //gs1 code의 owner 변경
   function changeOwnerOfGS1Code(bytes32 gs1Code, address newAddress)
   public
-  onlyExistOwner(msg.sender)
-  onlyOwner(gs1Code)
+  onlyRoot
   returns(bool)
   {
     require(gs1CodeList[gs1Code].index > 0);
-    gs1CodeList[gs1Code].owner = newAddress;
-    return true;
+    if (msg.sender == gs1CodeList[gs1Code].owner
+      || isManager(msg.sender) == true) {
+      gs1CodeList[gs1Code].owner = newAddress;
+      return true;
+    }
+    return false;
   }
-
 
   //owner에게 gs1 code를 할당한다.
   //권한은 mananger에게 줘야 할 것인가??
-  function addGS1Code(bytes32 gs1Code)
+  function addGS1Code(bytes32 gs1Code, address ownerAddr)
   public
-  onlyExistOwner(msg.sender)
-  onlyOwner(gs1Code)
+  onlyManager()
   returns(bool)
   {
     //owner가 존재하지 않으면 등록 불가.
     //owner만이 gs1code만을 등록할 수 있음.
-    if (isExistOwner(msg.sender) == false)
+    if (isExistOwner(ownerAddr) == false)
       return false;
 
     //gs1 code가 이미 등록되어 있으면 등록불가
@@ -121,52 +138,49 @@ contract ONSGS1Code is ONSAccessControl{
 
     //GS1Code 를 생성하고 gs1CodeList에 추가함.
     //추가할 때 index를 얻어서 저장해 놓음, 나중에 참조할 때는 -1을 빼야한다.
-    uin5256 iterIdx = gs1CodeIterList.push(gs1Code);
-    gs1CodeList[gs1Code] = GS1Code(msg.sender, gs1Code, INACTIVE, iterIdx);
+    uint256 iterIdx = gs1CodeIterList.push(gs1Code);
+    gs1CodeList[gs1Code] = GS1Code(ownerAddr, gs1Code, GS1CodeState.INACTIVE, iterIdx);
 
     //GS1CodesOfOwner 변수를 선언/
     //-> owner의 GS1CodesOfOwner가 없으면 생성할 필요가 있기 때문
-    GS1CodesOfOwner gs1CodesOfOwner;
+    //GS1CodesOfOwner gs1CodesOfOwner;
 
     //owner의 GS1CodesOfOwner가 이미 만들어져 있는지 확인
-    if (isExistGS1CodesOfOwner(msg.sender) == false) {
+    if (isExistGS1CodesOfOwner(ownerAddr) == false) {
       //없다면 새롭게 생성하여 등록함.
-      gs1CodesOfOwner = GS1CodesOfOwner({owner:msg.sender});
-      gs1CodeListOfOwner[msg.sender] = gs1CodesOfOwner;
-    }else //존재하면 ownerGS1CodeListIndex에서 index를 찾고, gs1CodeListOfOwner에서 찾음
-      gs1CodesOfOwner = gs1CodeListOfOwner[msg.sender];
+      gs1CodeListOfOwner[ownerAddr] = GS1CodesOfOwner({owner:ownerAddr, gs1CodeList:new bytes32[](0)});
+    }
 
     //owner의 GS1CodesOfOwner에 gs1 code를 저장함.
     //소유권이 생긴 것임..
-    gs1CodesOfOwner.gs1CodeList.push(gs1Code);
-    allowedProviderForGS1Code[gs1Code] = msg.sender;
+    gs1CodeListOfOwner[ownerAddr].gs1CodeList.push(gs1Code);
+    //allowedProviderMapForGS1Code[gs1Code].push(msg.sender);
     return true;
   }
 
   //owner에게 할당된 gs1 code를 삭제.
   //권한은 mananger에게만? 줘야 할 것인가?
-  function removeGS1Code(bytes32 gs1Code)
+  function removeGS1Code(bytes32 gs1Code, address ownerAddr)
   public
-  onlyExistOwner(msg.sender)
-  onlyOwner(gs1Code)
+  onlyManager()
   returns(bool)
   {
-    require(isExistOwner(msg.sender) == true);
+    require(isExistOwner(ownerAddr) == true);
 
     //gs1 code가 이미 등록되어 있지 않으면 삭제불가
     if (isExistGS1Code(gs1Code) == false)
       return false;
 
-    if (gs1CodeList[gs1Code].owner != msg.sender
+    if (gs1CodeList[gs1Code].owner != ownerAddr
       || gs1CodeList[gs1Code].gs1Code != gs1Code)
       return false;
 
     /*
       array의 item을 삭제할 경우에 실제 array가 줄어드는지 확인이 필요하다.(length 포함)
     */
-    for (uint i = 0; i < gs1CodeListOfOwner[msg.sender].gs1CodeList.length; i++) {
-      if (gs1CodeListOfOwner[msg.sender].gs1CodeList[i] == gs1Code) {
-        delete gs1CodeListOfOwner[msg.sender].gs1CodeList[i];
+    for (uint i = 0; i < gs1CodeListOfOwner[ownerAddr].gs1CodeList.length; i++) {
+      if (gs1CodeListOfOwner[ownerAddr].gs1CodeList[i] == gs1Code) {
+        delete gs1CodeListOfOwner[ownerAddr].gs1CodeList[i];
         break;
       }
     }
@@ -175,37 +189,7 @@ contract ONSGS1Code is ONSAccessControl{
       delete gs1CodeIterList[gs1CodeList[gs1Code].index-1];
 
     delete gs1CodeList[gs1Code];
-    delete allowedProviderForGS1Code[gs1Code];
     return true;
   }
 
-  function registerAllowedProvider(bytes32 gs1Code, address providerAddress)
-  public
-  onlyExistOwner(msg.sender)
-  onlyOwner(gs1Code)
-  returns(bool)
-  {
-    require(isExistOwner(msg.sender) == true);
-    allowedProviderForGS1Code[gs1Code] = providerAddress;
-    return true;
-  }
-
-  function deregisterAllowedProvider(bytes32 gs1Code)
-  public
-  onlyExistOwner(msg.sender)
-  onlyOwner(gs1Code)
-  returns(bool)
-  {
-    require(isExistOwner(msg.sender) == true);
-    allowedProviderForGS1Code[gs1Code] = msg.sender;
-    return true;
-  }
-
-  function getAllowedProvider(bytes32 gs1Code)
-  public
-  returns(address)
-  {
-    require(gs1CodeList[gs1Code].index > 0);
-    return allowedProviderForGS1Code[gs1Code];
-  }
 }

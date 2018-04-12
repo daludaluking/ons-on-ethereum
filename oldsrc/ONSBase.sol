@@ -74,7 +74,7 @@ contract ONSBase is ONSAccessControl, ERC721{
   //gs1 code와 GS1Code 구조체와의 매핑
   //GS1 Code에 mapping되는 GS1Code 구조체의 index를 저장함.
   //GS1 Code index는 GS1 Code를 참조하는 모든 mapping의 기준
-  mapping (byte32 => uint256) public GS1CodeToIndex;
+  mapping (bytes32 => uint256) public GS1CodeToIndex;
 
   //GS1 code index와 GS1 code 소유자 주소와 매핑
   //GS1 Code index에 mapping된 GS1 Code 소유자의 address
@@ -88,7 +88,7 @@ contract ONSBase is ONSAccessControl, ERC721{
 
   //addressToGS1CodeIndexes[address].push(gs1code index)
   //GS1Code의 소유자(account) index
-  mapping (byte32 => uint256) public GS1CodeToOwnerIndex;
+  mapping (bytes32 => uint256) public GS1CodeToOwnerIndex;
 
   //address가 가지는 GS1Code count;
   //account(address)가 가지고 있는(등록한 것이 아닌 현재 소유중인) GS1 code count
@@ -109,7 +109,7 @@ contract ONSBase is ONSAccessControl, ERC721{
     return GS1CodeIndexToOwner[_tokenId] == _address;
   }
 
-  function _isExistGS1Code(byte32 _gs1Code)
+  function _isExistGS1Code(bytes32 _gs1Code)
   internal
   view
   returns(bool)
@@ -139,7 +139,6 @@ contract ONSBase is ONSAccessControl, ERC721{
   //GS1Code의 상태를 active(1) or inactive(0)으로 변경하는 함수.
   function _changeGS1CodeState(uint256 _gs1CodeID, bool state)
   internal
-  onlyRoot
   {
     require(gs1Codes[_gs1CodeID].owner != address(0));
     gs1Codes[_gs1CodeID].state = state;
@@ -148,7 +147,6 @@ contract ONSBase is ONSAccessControl, ERC721{
   //ONS Record의 상태를 active(1) or inactive(0)으로 변경하는 함수.
   function _changeONSRecordState(uint256 _gs1CodeId, uint256 _onsRecordId, bool state)
   internal
-  onlyRoot
   {
     require(gs1Codes[_gs1CodeId].owner != address(0));
     require(gs1Codes[_gs1CodeId].onsRecordIndexes[_onsRecordId] == true);
@@ -252,7 +250,7 @@ contract ONSBase is ONSAccessControl, ERC721{
     }
   }
 
-  function _addGS1Code(byte32 _gs1Code)
+  function _addGS1Code(bytes32 _gs1Code)
   internal
   onlyAllowedAccount
   returns(bool)
@@ -282,7 +280,7 @@ contract ONSBase is ONSAccessControl, ERC721{
   returns(bool)
   {
     //GS1Code가 존재해야 하고, GS1Code의 소유자가 msg.sender가 되어야 함.
-    require(_owns(msg.sender, _gs1CodId))
+    require(_owns(msg.sender, _gs1CodId));
 
     uint256 recordId = onsRecords.push(ONSRecord({flags:_flags,
                                                 service:_service,
@@ -307,7 +305,7 @@ contract ONSBase is ONSAccessControl, ERC721{
     bytes32[] obsoletedBy;
   }
   */
-  function _addServiceType(uint256 _onsRecordId, byte32 _serviceTypeIdentifer, bool _abstrct,
+  function _addServiceType(uint256 _onsRecordId, bytes32 _serviceTypeIdentifer, bool _abstrct,
                           bytes32 _extends, string _WSDL, string _homepage)
   internal
   onlyAllowedAccount
