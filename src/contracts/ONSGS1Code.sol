@@ -35,9 +35,15 @@ contract ONSGS1Code is ONSAccessControl{
   //owner들의 GS1CodesOfOwner data list
   mapping(address=>GS1CodesOfOwner) gs1CodeListOfOwner;
 
+  struct Provider {
+    uint allowedProviderListPointer; // needed to delete a "allowedProvider"
+    address[] providers;
+    mapping(address => uint) providersPointer; // 4294967295 pointer is reserved as existence check
+  }
+
   //owner allow user to add ons records for gs1 code.
-  mapping(bytes32 => address) public allowedProviderForGS1Code;
-  //address[] allowedProviders;
+  mapping(bytes32 => Provider) public allowedProviderForGS1Code;
+  address[] allowedProviderList;
 
   function ONSGS1Code() {
   }
@@ -139,7 +145,7 @@ contract ONSGS1Code is ONSAccessControl{
     //owner의 GS1CodesOfOwner에 gs1 code를 저장함.
     //소유권이 생긴 것임..
     gs1CodesOfOwner.gs1CodeList.push(gs1Code);
-    allowedProviderForGS1Code[gs1Code] = msg.sender;
+    allowedProviderForGS1Code[gs1Code].providersPointer[msg.sender] = allowedProviderForGS1Code[gs1Code].providers.push(msg.sender)-1;
     return true;
   }
 
@@ -186,18 +192,24 @@ contract ONSGS1Code is ONSAccessControl{
   returns(bool)
   {
     require(isExistOwner(msg.sender) == true);
-    allowedProviderForGS1Code[gs1Code] = providerAddress;
+    allowedProviderForGS1Code[gs1Code].providersPointer[providerAddress] = allowedProviderForGS1Code[gs1Code].providers.push(providerAddress)-1;
     return true;
   }
 
-  function deregisterAllowedProvider(bytes32 gs1Code)
+  function deregisterAllowedProvider(bytes32 gs1Code, address providerAddresss)
   public
   onlyExistOwner(msg.sender)
   onlyOwner(gs1Code)
   returns(bool)
   {
     require(isExistOwner(msg.sender) == true);
-    allowedProviderForGS1Code[gs1Code] = msg.sender;
+    if (allowedProviderForGS1Code[gs1Code].providersPointer[providerAddress] == 4294967295) return false;
+    uint rowToDelete = allowedProviderForGS1Code[gs1Code].providersPointer[providerAddress];
+    address providerToMove = allowedProviderForGS1Code[gs1Code].providers[allowedProviderForGS1Code[gs1Code].providers.length-1];
+    allowedProviderForGS1Code[gs1Code].providers[rowToDelete] = providerToMove;
+    allowedProviderForGS1Code[gs1Code].providersPointer[providerToMove] = rowToDelete;
+    allowedProviderForGS1Code[gs1Code].providersPointer[providerAddress] = 4294967295;
+    allowedProviderForGS1Code[gs1Code].providers.length--;
     return true;
   }
 
