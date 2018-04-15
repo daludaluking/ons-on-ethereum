@@ -197,4 +197,13 @@ contract ONSGS1Code is ONSManager{
     delete gs1CodeList[gs1Code];
     return true;
   }
+
+  function getGs1CodeList()
+  public
+  view
+  onlyRoot
+  returns(bytes32[])
+  {
+    return gs1CodeIterList;
+  }
 }

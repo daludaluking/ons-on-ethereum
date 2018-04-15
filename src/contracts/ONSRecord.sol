@@ -29,7 +29,7 @@ contract ONSRecord is ONSGS1Code{
     //uint32 order;
     //uint32 pref;
     uint8 flags;
-    bytes32 service; //url.... is it needed??
+    string service; //url.... is it needed??
     string regexp;
     //string replacement;
     //extended properties
@@ -42,7 +42,7 @@ contract ONSRecord is ONSGS1Code{
   struct RecordResult
   {
     uint8 flags;
-    bytes32 service; //url.... is it needed??
+    string service; //url.... is it needed??
     string regexp;
   }
 
@@ -115,9 +115,8 @@ contract ONSRecord is ONSGS1Code{
     return false;
   }
 
-  function addRecord(bytes32 gs1Code, uint8 flags, bytes32 service, string regexp) public returns(bool){
-    if (isAllowedProvider(gs1Code, msg.sender) == false)
-      return false;
+  function addRecord(bytes32 gs1Code, uint8 flags, string service, string regexp) public returns(bool){
+    require(isAllowedProvider(gs1Code, msg.sender));
 
     if (isExistONSCoreDataByGS1Code(gs1Code) == false)
       onsCoreDataList[gs1Code] = ONSCoreData(msg.sender, gs1Code);
@@ -132,9 +131,7 @@ contract ONSRecord is ONSGS1Code{
   function removeRecord(bytes32 gs1Code, uint8 recordId) public returns(bool){
     require(recordId >= 0);
     require(recordListMap[gs1Code].length > recordId);
-
-    if (isAllowedProvider(gs1Code, msg.sender) == false)
-      return false;
+    require(isAllowedProvider(gs1Code, msg.sender));
     /*
     delete onsCoreDataList[gs1Code].recordList[recordId];
     onsCoreDataList[gs1Code].maxRecodeId--;
@@ -159,6 +156,15 @@ contract ONSRecord is ONSGS1Code{
                         recordListMap[gs1Code][recordId].regexp);
   }
 
+  function getRecord2(bytes32 gs1Code, uint256 recordId) public view returns(uint8, string, string) {
+    require(recordId >= 0);
+    //require(onsCoreDataList[gs1Code].maxRecodeId > recordId);
+    require(recordListMap[gs1Code].length > recordId);
+    require(getGS1CodeState(gs1Code) == GS1CodeState.ACTIVE);
+    return (recordListMap[gs1Code][recordId].flags,
+      recordListMap[gs1Code][recordId].service,
+      recordListMap[gs1Code][recordId].regexp);
+  }
   //TO-DO
   /*
   function addFlexibleServiceType(bytes32 gs1Code, uint256 recordId, string[] _keys, string[] _values) public returns(bool){
